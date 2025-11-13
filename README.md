@@ -1,6 +1,7 @@
 # 📨 Outlook Email Automation Tool (PyQt5 + Outlook Integration)
 
 A desktop application built using Python (PyQt5) that automates the process of composing and sending standardized Outlook emails through an interactive GUI.
+
 This tool is ideal for teams handling employee block requests or onboarding/offboarding communications, allowing users to quickly fill in employee details, select recipient groups, and send formatted emails directly via Microsoft Outlook.
 
 ---
