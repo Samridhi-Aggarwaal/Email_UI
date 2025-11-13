@@ -8,19 +8,18 @@ from PyQt5.QtWidgets import (
 
 
 RECIPIENT_GROUPS = {
-  "CDT Block": ["nikhila.bharath@fractal.ai", "kashmira.magarde@fractal.ai"],
-  "DS Block": ["virag.jhaveri@fractal.ai", "aniket.shetty@fractal.ai"]
+  "Block A": ["abc@xyz.com", "def@xyz.com"],
+  "Block B": ["ghi@xyz.com", "jkl@xyz.com"]
 }
 CC_LIST = [
-  "rahul.roychowdhury@fractal.ai","ankit.gupta@fractal.ai",
-  "nayana.ck@fractal.ai"
+  "xyz@abc.com","uvw@abc.com"
 ]
 ROLES = [
   "Custom", "Power BI", "Fullstack", "Devops", "Scrum", "TPM", "UI/UX designer",
   "Motion designer", "RPA developer", "QA tester", "DS", "gen AI DS",
   "BA-Supply chain", "Azure Data Engineer"
 ]
-COMPANIES = ["Custom", "Kenvue", "Lowes", "Jim Beam"]
+COMPANIES = ["Custom", "CompA", "CompB", "CompC"]
 
 
 class OutlookEmailApp(QWidget):
