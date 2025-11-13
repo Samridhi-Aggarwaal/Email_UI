@@ -265,3 +265,92 @@ class OutlookEmailApp(QWidget):
     self.people_entries.remove(person_tuple)
     frame.deleteLater()
     self.update_delete_buttons()
+
+  def update_delete_buttons(self):
+      for _, _, _, _, _, _, _, _, delete_btn in self.people_entries:
+          delete_btn.setEnabled(len(self.people_entries) > 1)
+
+  def highlight_invalid(self, widget):
+      palette = widget.palette()
+      palette.setColor(QPalette.Base, QColor("#ffe6e6"))
+      widget.setPalette(palette)
+
+  def clear_highlight(self, widget):
+      widget.setPalette(QPalette())
+
+  def handle_custom_dropdown(self, dropdown, entry):
+      entry.setVisible(dropdown.currentText() == "Custom")
+
+  def validate_fields(self):
+      errors = []
+      self.check_recipient_fields(errors)   # Check To and CC fields
+      self.check_sender_fields(errors)      # Validate sender information
+      self.check_employee_fields(errors)    # Verify employee details
+      return errors
+
+  def check_recipient_fields(self, errors):
+      to_raw = self.custom_to_entry.text().strip()
+      cc_raw = self.cc_entry.text().strip()
+      self.validate_non_empty_field(to_raw, "Recipient emails (To) are required.", self.custom_to_entry, errors)
+      self.validate_non_empty_field(cc_raw, "CC field is required.", self.cc_entry, errors)
+
+  def check_sender_fields(self, errors):
+      sender = self.sender_entry.text().strip()
+      self.validate_non_empty_field(sender, "Sender name is required.", self.sender_entry, errors)
+
+  def check_employee_fields(self, errors):
+      for idx, person in enumerate(self.people_entries, 1):
+          name_entry, code_entry, role_dropdown, company_dropdown, role_entry, company_entry, _, _ = person
+          self.validate_employee_fields(idx, name_entry, code_entry, role_dropdown, company_dropdown, role_entry, company_entry, errors)
+
+  def validate_employee_fields(self, idx, name_entry, code_entry, role_dropdown, company_dropdown, role_entry, company_entry, errors):
+      self.validate_non_empty_field(name_entry.text().strip(), f"Employee {idx}: Name is required.", name_entry, errors)
+      self.validate_non_empty_field(code_entry.text().strip(), f"Employee {idx}: Code is required.", code_entry, errors)
+      
+      if role_dropdown.currentText() == "Custom":
+          self.validate_non_empty_field(role_entry.text().strip(), f"Employee {idx}: Custom Role is required.", role_entry, errors)
+      if company_dropdown.currentText() == "Custom":
+          self.validate_non_empty_field(company_entry.text().strip(), f"Employee {idx}: Custom Company is required.", company_entry, errors)
+
+  def validate_non_empty_field(self, value, error_message, widget, errors):
+      if not value:
+          errors.append(error_message)
+          self.highlight_invalid(widget)
+          widget.setToolTip(error_message)
+      else:
+          self.clear_highlight(widget)
+          widget.setToolTip("")
+
+  def build_email(self):
+      errors = self.validate_fields()
+      if errors:
+          QMessageBox.critical(self, "Validation Error", "\n".join(errors))
+          return None, None
+      # Process recipient email addresses
+      to_raw = self.custom_to_entry.text().strip()
+      emails = [id.strip() for id in to_raw.split(";") if id.strip()]
+      self.cc_value = self.cc_entry.text().strip()
+      
+      # Collect information for all employees
+      people_info = [self.extract_person_info(person) for person in self.people_entries]
+      
+      sender = self.sender_entry.text().strip()
+      subject = self.construct_subject(people_info)
+      body = self.construct_body(emails, sender, people_info)
+      
+      return emails, (subject, body)
+
+  def extract_person_info(self, person):
+      sr_no_entry, name_entry, code_entry, role_dropdown, company_dropdown, role_entry, company_entry, _, _ = person
+      sr_no = sr_no_entry.text().strip()
+      name = name_entry.text().strip()
+      code = code_entry.text().strip()
+      role = role_dropdown.currentText() if role_dropdown.currentText() != "Custom" else role_entry.text().strip()
+      company = company_dropdown.currentText() if company_dropdown.currentText() != "Custom" else company_entry.text().strip()
+      return sr_no, name, code, role, company
+
+  def construct_subject(self, people_info):
+      if len(people_info) > 1:
+          return f"Block request for {len(people_info)} employee(s)"
+      sr_no, name, _, role, company = people_info[0]
+      return f"Block request for {name} - {role} role in {company}"
