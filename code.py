@@ -354,3 +354,96 @@ class OutlookEmailApp(QWidget):
           return f"Block request for {len(people_info)} employee(s)"
       sr_no, name, _, role, company = people_info[0]
       return f"Block request for {name} - {role} role in {company}"
+
+  def construct_body(self, emails, sender, people_info):
+      first_names = [email.split("@")[0].split(".")[0].capitalize() for email in emails]
+      greeting = ', '.join(first_names[:-1]) + f" and {first_names[-1]}" if len(first_names) > 1 else first_names[0]
+      
+      body = f"Hi {greeting},\n\n"
+      body += self.compose_individual_body(people_info)
+      body += f"\nThanks,\n{sender}"
+      return body
+
+  def compose_individual_body(self, people_info):
+      if len(people_info) == 1:
+          sr_no, name, code, role, company = people_info[0]
+          return f"Please block {name} ({code}) for {role} role in {company}.\nSR:{sr_no}\n\n" if sr_no else "\n\n"
+      body = "Please block the following employee(s):\n"
+      return body
+
+  def create_outlook_mail(self):
+      try:
+          outlook = win32.Dispatch("Outlook.Application")
+          namespace = outlook.GetNamespace("MAPI")
+          mail = outlook.CreateItem(0)
+          return mail
+      except Exception as e:
+          QMessageBox.critical(self, "Outlook Error", f"❌ Failed to access Outlook.\n{e}")
+          return None
+
+  def reset_form(self):
+      self.set_defaults()
+      self.clear_fields()
+
+  def set_defaulats():
+      self.to_dropdown.setCurrentIndex(2)
+      self.cc_entry.setText(self.cc_value)
+      if not self.fixed_sender_checkbox.isChecked():
+          self.sender_entry.clear()
+
+  def clear_fields(self):
+      for entry in self.people_entries[0][:7]:
+          entry.clear()
+          self.clear_highlight(entry)
+      self.update_delete_buttons()
+
+  def preview_email(self):
+      # Build email content and validate
+      emails, content = self.build_email()
+      if not emails or not content:
+          return
+      subject, body = content
+      # Create Outlook mail item
+      mail = self.create_outlook_mail()
+      if not mail:
+          return
+      try:
+          # Populate and display the email
+          mail.To = "; ".join(emails)
+          mail.CC = self.cc_value
+          mail.Subject = subject
+          mail.Body = body
+          mail.Display()  # Show email in Outlook
+          QMessageBox.information(self, "Draft Ready", "Draft opened in Outlook.")
+          self.reset_form()
+      except Exception as e:
+          QMessageBox.critical(self, "Error", f"Failed to create draft.\n{e}")
+
+  def send_email(self):
+      # Build email content and validate
+      emails, content = self.build_email()
+      if not emails or not content:
+          return
+      subject, body = content
+      # Create Outlook mail item
+      mail = self.create_outlook_mail()
+      if not mail:
+          return
+      try:
+          # Populate and display the email
+          mail.To = "; ".join(emails)
+          mail.CC = self.cc_value
+          mail.Subject = subject
+          mail.Body = body
+          mail.Save()
+          mail.Send()
+          QMessageBox.information(self, "Success", "Email sent successfully.")
+          self.reset_form()
+      except Exception as e:
+          QMessageBox.critical(self, "Error", f"Failed to send email.\n{e}")
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = OutlookEmailApp()
+    window.show()
+    sys.exit(app.exec_())
